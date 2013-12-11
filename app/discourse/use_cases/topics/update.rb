@@ -14,12 +14,8 @@ module UseCases
         topic = topic_repository.find_by_id(topic_id)
         guardian.ensure_can_edit!(topic)
 
-        if title.present?
-          topic.title = title
-        end
-
-        # TODO: we may need smarter rules about converting archetypes
-        topic.archetype = "regular" if context.current_user.admin? && archetype == 'regular'
+        set_topic_title(topic, title)
+        set_topic_archetype(topic, archetype)
 
         success = topic_repository.save topic do
           topic.change_category(category)
@@ -28,6 +24,18 @@ module UseCases
         success ? context.update_succeeded(topic) : context.update_failed(topic)
       end
 
+      def set_topic_title(topic, title)
+        if title.present?
+          topic.title = title
+        end
+      end
+
+      def set_topic_archetype(topic, archetype)
+        # TODO: we may need smarter rules about converting archetypes
+        if context.current_user.admin? && archetype == 'regular'
+          topic.archetype = "regular"
+        end
+      end
     end
   end
 end
