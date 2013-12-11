@@ -92,24 +92,12 @@ class TopicsController < ApplicationController
     render nothing: true
   end
 
-  def update
-    topic = topic_repository.find_by_id(params[:topic_id])
-    title, archetype = params[:title], params[:archetype]
-    guardian.ensure_can_edit!(topic)
-
-    topic.title = params[:title] if title.present?
-    # TODO: we may need smarter rules about converting archetypes
-    topic.archetype = "regular" if current_user.admin? && archetype == 'regular'
-
-    success = topic_repository.save topic do
-      topic.change_category(params[:category])
-    end
-
-    success ? update_succeeded(topic) : update_failed(topic)
-  end
-
   def topic_repository
     Repositories::TopicRepository
+  end
+
+  def update
+    UseCases::Topics::Update.new(self).run(params)
   end
 
   def update_succeeded(topic)
