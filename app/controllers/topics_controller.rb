@@ -93,7 +93,7 @@ class TopicsController < ApplicationController
   end
 
   def update
-    topic = Topic.where(id: params[:topic_id]).first
+    topic = topic_repository.find_by_id(params[:topic_id])
     title, archetype = params[:title], params[:archetype]
     guardian.ensure_can_edit!(topic)
 
@@ -101,14 +101,25 @@ class TopicsController < ApplicationController
     # TODO: we may need smarter rules about converting archetypes
     topic.archetype = "regular" if current_user.admin? && archetype == 'regular'
 
-    success = false
-    Topic.transaction do
-      success = topic.save
-      success = topic.change_category(params[:category]) if success
+    success = topic_repository.save topic do
+      topic.change_category(params[:category])
     end
+
+    success ? update_succeeded(topic) : update_failed(topic)
+  end
+
+  def topic_repository
+    Repositories::TopicRepository
+  end
+
+  def update_succeeded(topic)
     # this is used to return the title to the client as it may have been
     # changed by "TextCleaner"
-    success ? render_serialized(topic, BasicTopicSerializer) : render_json_error(topic)
+    render_serialized(topic, BasicTopicSerializer)
+  end
+
+  def update_failed(topic)
+    render_json_error(topic)
   end
 
   def similar_to
