@@ -92,6 +92,11 @@ class TopicsController < ApplicationController
     render nothing: true
   end
 
+  # TODO: this would go on ApplicationController
+  def is_admin?
+    current_user.admin?
+  end
+
   def topic_repository
     Repositories::TopicRepository
   end

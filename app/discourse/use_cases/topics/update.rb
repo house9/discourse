@@ -32,7 +32,7 @@ module UseCases
 
       def set_topic_archetype(topic, archetype)
         # TODO: we may need smarter rules about converting archetypes
-        if context.current_user.admin? && archetype == 'regular'
+        if context.is_admin? && archetype == 'regular'
           topic.archetype = "regular"
         end
       end
