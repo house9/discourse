@@ -97,7 +97,11 @@ class TopicsController < ApplicationController
   end
 
   def update
-    UseCases::Topics::Update.new(self).run(params)
+    UseCases::Topics::Update.new(self).run(params[:topic_id],
+      params[:title],
+      params[:archetype],
+      params[:category]
+    )
   end
 
   def update_succeeded(topic)
