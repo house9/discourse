@@ -754,9 +754,17 @@ describe Topic do
 
     context 'changing category' do
       let(:category) { Fabricate(:category) }
+      let(:topic_updater) do
+        dependencies = {
+          guardian: stub,
+          topic_repository: stub,
+          category_repository: Repositories::CategoryRepository
+        }
+        UseCases::Topics::Update.new(nil, dependencies)
+      end
 
       before do
-        topic.change_category(category.name)
+        topic_updater.handle_category_changes(topic, category.name)
       end
 
       it "creates a new version" do
@@ -765,7 +773,7 @@ describe Topic do
 
       context "removing a category" do
         before do
-          topic.change_category(nil)
+          topic_updater.handle_category_changes(topic, nil)
         end
 
         it "creates a new version" do
@@ -796,16 +804,30 @@ describe Topic do
       @user = @topic.user
     end
 
+    let(:topic_updater) do
+      dependencies = {
+        guardian: stub,
+        topic_repository: stub,
+        category_repository: Repositories::CategoryRepository
+      }
+      UseCases::Topics::Update.new(nil, dependencies)
+    end
+
+    def change_the_category(category_name, reload_category = true)
+      result = topic_updater.handle_category_changes(@topic, category_name)
+      @category.reload if reload_category
+      result
+    end
+
     describe 'without a previous category' do
 
       it 'should not change the topic_count when not changed' do
-       lambda { @topic.change_category(@topic.category.name); @category.reload }.should_not change(@category, :topic_count)
+        lambda { change_the_category(@topic.category.name) }.should_not change(@category, :topic_count)
       end
 
       describe 'changed category' do
         before do
-          @topic.change_category(@category.name)
-          @category.reload
+          change_the_category(@category.name)
         end
 
         it 'changes the category' do
@@ -816,16 +838,15 @@ describe Topic do
       end
 
       it "doesn't change the category when it can't be found" do
-        @topic.change_category('made up')
+        change_the_category('made up', false)
         @topic.category_id.should == SiteSetting.uncategorized_category_id
       end
     end
 
     describe 'with a previous category' do
       before do
-        @topic.change_category(@category.name)
+        change_the_category(@category.name)
         @topic.reload
-        @category.reload
       end
 
       it 'increases the topic_count' do
@@ -833,21 +854,20 @@ describe Topic do
       end
 
       it "doesn't change the topic_count when the value doesn't change" do
-        lambda { @topic.change_category(@category.name); @category.reload }.should_not change(@category, :topic_count)
+        lambda { change_the_category(@category.name) }.should_not change(@category, :topic_count)
       end
 
       it "doesn't reset the category when given a name that doesn't exist" do
-        @topic.change_category('made up')
+        change_the_category('made up', false)
         @topic.category_id.should be_present
       end
 
       describe 'to a different category' do
         before do
           @new_category = Fabricate(:category, user: @user, name: '2nd category')
-          @topic.change_category(@new_category.name)
+          change_the_category(@new_category.name)
           @topic.reload
           @new_category.reload
-          @category.reload
         end
 
         it "should increase the new category's topic count" do
@@ -867,14 +887,13 @@ describe Topic do
         let!(:topic) { Fabricate(:topic, category: Fabricate(:category)) }
 
         it 'returns false' do
-          topic.change_category('').should eq(false) # don't use "be_false" here because it would also match nil
+          change_the_category('').should eq(false) # don't use "be_false" here because it would also match nil
         end
       end
 
       describe 'when the category exists' do
         before do
-          @topic.change_category(nil)
-          @category.reload
+          change_the_category(nil)
         end
 
         it "resets the category" do

@@ -69,7 +69,9 @@ class PostsController < ApplicationController
     if post.post_number == 1 && (params[:title] || params[:post][:category])
       post.topic.title = params[:title] if params[:title]
       Topic.transaction do
-        post.topic.change_category(params[:post][:category])
+        # this is a 're-usable' part of a 'use-case'
+        # this could be refactored away into 'domain' logic if the repository dependency was removed
+        UseCases::Topics::Update.new(self).handle_category_changes(post.topic, params[:post][:category])
         post.topic.save
       end
 

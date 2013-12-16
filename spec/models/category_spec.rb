@@ -223,8 +223,15 @@ describe Category do
 
     describe "trying to change the category topic's category" do
       before do
+        dependencies = {
+          guardian: stub,
+          topic_repository: stub,
+          category_repository: Repositories::CategoryRepository
+        }
+        topic_updater = UseCases::Topics::Update.new(nil, dependencies)
+
         @new_cat = Fabricate(:category, name: '2nd Category', user: @category.user)
-        @topic.change_category(@new_cat.name)
+        topic_updater.handle_category_changes(@topic, @new_cat.name)
         @topic.reload
         @category.reload
       end

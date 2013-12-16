@@ -191,6 +191,19 @@ class ApplicationController < ActionController::Base
     post_ids
   end
 
+  # TODO: better naming?
+  def is_admin?
+    current_user.admin?
+  end
+
+  def topic_repository
+    Repositories::TopicRepository
+  end
+
+  def category_repository
+    Repositories::CategoryRepository
+  end
+
   private
 
     def preload_anonymous_data

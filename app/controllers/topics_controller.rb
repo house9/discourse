@@ -92,15 +92,6 @@ class TopicsController < ApplicationController
     render nothing: true
   end
 
-  # TODO: this would go on ApplicationController
-  def is_admin?
-    current_user.admin?
-  end
-
-  def topic_repository
-    Repositories::TopicRepository
-  end
-
   def update
     UseCases::Topics::Update.new(self).run(params[:topic_id],
       params[:title],
